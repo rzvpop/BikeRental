@@ -25,6 +25,13 @@ public:
     void remove(const T&);
     bool find(const T&);
     int getSize();
+    T getElemOnPos(int pos);
+    void Print()
+    {
+        for(int i = 0; i < size; ++i)
+            std::cout << i << '-' << v[i].info << ' ';
+        std::cout << '\n';
+    }
 
 private:
     TNode<T> *v;
@@ -80,6 +87,23 @@ Set<T>& Set<T>::operator=(const Set<T> &s)
         v[i] = s.v[i];
 
     return  *this;
+}
+
+template <typename T>
+T Set<T>::getElemOnPos(int pos)
+{
+    int curr_node = head;
+
+    if(pos < size)
+    {
+        while(pos)
+        {
+            curr_node = v[curr_node].next;
+            --pos;
+        }
+
+        return v[curr_node].info;
+    }
 }
 
 template <typename T>
@@ -168,14 +192,56 @@ void Set<T>::remove(const T &t)
 
         if(v[pos].prev != -1)
             v[v[pos].prev].next = v[pos].next;
+        else
+            head = v[pos].next;
         if(v[pos].next != -1)
             v[v[pos].next].prev = v[pos].prev;
+        else
+            tail = v[pos].prev;
 
         v[pos].prev = -1;
         v[first_empty].prev = pos;
         v[pos].next = first_empty;
         first_empty = pos;
     }
+}
+
+template <typename T>
+class SetIterator
+{
+public:
+    explicit SetIterator(Set<T>* _set, int pos = 0) : set(_set), current(pos)
+    {
+        if(pos >= set->getSize())
+            pos = 0;
+    }
+
+    void next();
+    bool valid();
+    T getCurrent();
+
+private:
+    Set<T>* set;
+    int current;
+};
+
+template <typename T>
+void SetIterator<T>::next()
+{
+    if(valid())
+        ++current;
+}
+
+template <typename T>
+bool SetIterator<T>::valid()
+{
+    return current < set->getSize();
+}
+
+template <typename T>
+T SetIterator<T>::getCurrent()
+{
+    return set->getElemOnPos(current);
 }
 
 #endif //BIKERENTAL_SET_HPP
