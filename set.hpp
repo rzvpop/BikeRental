@@ -2,6 +2,34 @@
 #define BIKERENTAL_SET_HPP
 
 #include <iostream>
+#include <utility>
+
+class SetException
+{
+public:
+    explicit SetException(std::string _msg) : message(std::move(_msg)) {}
+    virtual std::string GetMsg() const
+    {
+        return message;
+    }
+
+private:
+    std::string message;
+};
+
+class SetContainerException : public SetException
+{
+public:
+    explicit SetContainerException(std::string _msg = "") : SetException(std::move(_msg)) {}
+
+};
+
+class SetIteratorException : public SetException
+{
+public:
+    explicit SetIteratorException(std::string _msg = "") : SetException(std::move(_msg)) {}
+
+};
 
 template <typename T>
 struct TNode
@@ -23,15 +51,11 @@ public:
 
     void add(const T&);
     void remove(const T&);
-    bool find(const T&);
-    int getSize();
-    T getElemOnPos(int pos);
-    void Print()
-    {
-        for(int i = 0; i < size; ++i)
-            std::cout << i << '-' << v[i].info << ' ';
-        std::cout << '\n';
-    }
+    bool find(const T&) const;
+    int getSize() const;
+
+    template <typename U>
+    friend class SetIterator;
 
 private:
     TNode<T> *v;
@@ -41,30 +65,42 @@ private:
     int tail = -1;
     int first_empty = -1;
 
-    int findPos(const T&);
+    int findPos(const T&) const;
     void Resize(int n = 2);
 };
 
 template <typename T>
 Set<T>::Set(int n) : capacity(n)
 {
+    //descr: create a new empty set
+    //pre: true
+    //post: s є S, s is an empty set, with a given capacity(n)
+
+    if(capacity <= 0)
+        throw SetContainerException{"Set capacity must be greater than 0."};
+
     v = new TNode<T>[capacity];
     first_empty = 0;
     for(int i = 0; i < capacity - 1; ++i)
         v[i].next = i + 1;
-
-
 }
 
 template <typename T>
 Set<T>::~Set()
 {
+    //descr: destroys a set
+    //pre: s є S
+    //post: the set s was destroyed
+
     delete[] v;
+    v = nullptr;
 }
 
 template <typename T>
 Set<T>::Set(const Set<T> &s) : capacity(s.capacity), size(s.size)
 {
+    //copy constructor
+
     for(int i = 0; i < size; ++i)
         v[i] = s.v[i];
 }
@@ -72,6 +108,8 @@ Set<T>::Set(const Set<T> &s) : capacity(s.capacity), size(s.size)
 template <typename T>
 Set<T>& Set<T>::operator=(const Set<T> &s)
 {
+    //copy operator
+
     if(this == &s)
         return *this;
 
@@ -90,23 +128,6 @@ Set<T>& Set<T>::operator=(const Set<T> &s)
 }
 
 template <typename T>
-T Set<T>::getElemOnPos(int pos)
-{
-    int curr_node = head;
-
-    if(pos < size)
-    {
-        while(pos)
-        {
-            curr_node = v[curr_node].next;
-            --pos;
-        }
-
-        return v[curr_node].info;
-    }
-}
-
-template <typename T>
 void Set<T>::Resize(int n)
 {
     capacity = n * capacity + 1;
@@ -121,14 +142,20 @@ void Set<T>::Resize(int n)
 }
 
 template <typename T>
-int Set<T>::getSize()
+int Set<T>::getSize() const
 {
+    //descr: returns the number of elements in set
+    //pre: s є S
+    //post: size ← number of elements from s
+
     return size;
 }
 
 template <typename T>
-int Set<T>::findPos(const T &t)
+int Set<T>::findPos(const T &t) const
 {
+    //returns position of t in dlla or -1 if it doesn't exist
+
     int cnode = head, pos = -1;
 
     while(pos == -1 && cnode != -1)
@@ -145,14 +172,23 @@ int Set<T>::findPos(const T &t)
 }
 
 template <typename T>
-bool Set<T>::find(const T &t)
+bool Set<T>::find(const T &t) const
 {
-    return findPos(t) != -1;
+    //descr: verifies if an element is in the set
+    //pre: s Є S, t Є Telem
+    //post: returns true if t is in the set or false otherwise
+
+    return (findPos(t) != -1);
 }
 
 template <typename T>
 void Set<T>::add(const T &t)
 {
+    //descr: adds a new element to the set
+    //pre: s є S, e є Telem
+    //post: s’ є S, s’ = s U {t} (t is added only if it is not in s yet.
+    //       If s contains the element e already, no change is made).
+
     if(size < capacity)
     {
         if(findPos(t) == -1)
@@ -178,12 +214,20 @@ void Set<T>::add(const T &t)
             }
             ++size;
         }
+        else
+            throw SetContainerException{"Element already exists."};
     }
+    else
+        throw SetContainerException{"Set is full."};
 }
 
 template <typename T>
 void Set<T>::remove(const T &t)
 {
+    //descr: removes an element from the set
+    //pre: s є S, e є Telem
+    //post: s ∈ S, s 0 = s \ {t} (if t is not in s, s is not changed)
+
     int pos = findPos(t);
 
     if(pos != -1)
@@ -204,21 +248,28 @@ void Set<T>::remove(const T &t)
         v[pos].next = first_empty;
         first_empty = pos;
     }
+    else
+        throw SetContainerException{"Element doesn't exist."};
 }
 
 template <typename T>
 class SetIterator
 {
 public:
-    explicit SetIterator(Set<T>* _set, int pos = 0) : set(_set), current(pos)
+    explicit SetIterator(Set<T>* _set) : set(_set)
     {
-        if(pos >= set->getSize())
-            pos = 0;
+        //set: a set on dlla
+        //currentElem: integer(representing the position in dlla,
+        //              initialized with the position of the header)
+
+        current = set->head;
     }
 
     void next();
-    bool valid();
-    T getCurrent();
+    bool valid() const;
+    T getCurrent() const;
+    void operator++();
+    void reset();
 
 private:
     Set<T>* set;
@@ -228,20 +279,54 @@ private:
 template <typename T>
 void SetIterator<T>::next()
 {
+    //descr: moves the current element from the set to the 	next or makes it invalid
+    //pre: it є I is valid
+    //post: it points to the next element from the container, if ex-current was valid
+
     if(valid())
-        ++current;
+        current = set->v[current].next;
+    else
+        throw SetIteratorException{"Iterator isn't valid."};
 }
 
 template <typename T>
-bool SetIterator<T>::valid()
+void SetIterator<T>::operator++()
 {
-    return current < set->getSize();
+    if(valid())
+        current = set->v[current].next;
+    else
+        throw SetIteratorException{"Iterator isn't valid."};
 }
 
 template <typename T>
-T SetIterator<T>::getCurrent()
+bool SetIterator<T>::valid() const
 {
-    return set->getElemOnPos(current);
+    //descr: verifies if the iterator is valid
+    //pre: it є I
+    //post: returns true if it points to a valid element or false otherwise
+
+    return current != -1;
+}
+
+template <typename T>
+T SetIterator<T>::getCurrent() const
+{
+    //descr: returns the current element from the iterator
+    //pre: it є I is valid
+    //post: t є TElem, t is the current element from it
+
+    if(valid())
+        return set->v[current].info;
+    else
+        throw SetIteratorException{"Iterator isn't valid."};
+}
+
+template <typename T>
+void SetIterator<T>::reset()
+{
+    //make iterator point to the head element of the container
+
+    current = set->head;
 }
 
 #endif //BIKERENTAL_SET_HPP

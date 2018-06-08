@@ -1,12 +1,14 @@
 #include <iostream>
 #include "set.hpp"
+#include "tests.hpp"
 
 int main()
 {
-    //test &  specificatii
-    //pdf
-    //problema
+    Test test;
 
+    //exceptii
+    //pdf(completez cu chestii notate, text problema)
+    //problema
 
 return 0;
 }
