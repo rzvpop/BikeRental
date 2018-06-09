@@ -232,8 +232,6 @@ void Set<T>::remove(const T &t)
 
     if(pos != -1)
     {
-        --size;
-
         if(v[pos].prev != -1)
             v[v[pos].prev].next = v[pos].next;
         else
@@ -247,6 +245,8 @@ void Set<T>::remove(const T &t)
         v[first_empty].prev = pos;
         v[pos].next = first_empty;
         first_empty = pos;
+
+        --size;
     }
     else
         throw SetContainerException{"Element doesn't exist."};
